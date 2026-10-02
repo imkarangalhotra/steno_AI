@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#174e43"><meta name="description" content="Speak freely. Write clearly. English and Hinglish voice writing.">
+  <link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon.svg"><link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script><title>Steno — your voice, clearly written</title>
+</head>
+<body>
+<main>
+  <header><a class="brand" href="/">◉ steno<span>YOUR VOICE, CLEARLY WRITTEN</span></a><span class="badge">English + Hinglish</span></header>
+  <div class="intro"><h1>Let your words find their flow.</h1></div>
+  <section class="workspace" aria-label="Voice writing workspace">
+    <div class="recorder"><button id="record" class="primary" type="button" aria-keyshortcuts="Alt+Shift+R" aria-describedby="record-shortcut">● Start recording</button><span id="timer" aria-label="Recording duration">00:00</span><span class="muted" id="record-shortcut"><kbd id="shortcut-label">Alt + Shift + R</kbd> to start or stop · page must be focused <button id="change-shortcut" type="button">Change shortcut</button> <button id="reset-shortcut" type="button">Reset</button></span></div>
+    <div class="mini-launch"><button id="open-mini" type="button" hidden>↗ Open mini recorder</button></div>
+    <p id="status" role="status" aria-live="polite">Ready when you are.</p>
+    <div class="settings">
+      <label>Write in<select id="output"><option value="keep">Keep my language</option><option value="english">English</option><option value="hinglish">Hinglish</option></select></label>
+      <label>Writing style<select id="style"><option value="natural">Clean & natural</option><option value="literary">Literary</option></select></label>
+      <label>Spoken language<select id="language"><option value="">Auto / mixed Hinglish</option><option value="en">English</option><option value="hi">Hindi</option></select></label>
+    </div>
+    <div class="editors">
+      <label class="editor"><span>What you said <small>Editable transcript</small></span><textarea id="transcript" maxlength="20000" placeholder="Your words appear here. Or type or paste a passage to get started." spellcheck="false"></textarea></label>
+      <label class="editor"><span>Your finished text <small>Ready to make your own</small></span><textarea id="result" placeholder="Clearer writing. The same you." spellcheck="false"></textarea></label>
+    </div>
+    <div class="actions"><button id="rewrite" type="button">Refine text</button><button id="retry" type="button" hidden>Retry recording</button><label class="check"><input id="autocopy" type="checkbox" checked> Copy automatically</label><button id="copy" type="button" class="primary" disabled>Copy text</button></div>
+    <p class="hint">Copy, then paste wherever you’re writing. Keep this page active, or use the floating mini recorder.</p>
+  </section>
+  <footer><p>Audio and text are processed by our AI provider. Steno keeps no saved dictation history.</p><p>Use it in your browser, or add it to your home screen. Processing requires internet.</p><p id="setup" role="status"></p></footer>
+</main>
+</body></html>
