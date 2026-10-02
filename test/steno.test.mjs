@@ -98,9 +98,11 @@ test('page login sets a protected persistent session and rejects invalid credent
     const page = await fetch(origin + '/login');
     assert.equal(page.status, 200);
     assert.equal(page.headers.get('cache-control'), 'no-store');
+    assert.equal(page.headers.get('referrer-policy'), 'same-origin');
     assert.match(await page.text(), /name="username"/);
     assert.equal((await fetch(origin + '/style.css')).status, 200);
     assert.equal((await login('my-user', 'test-pass', 'https://evil.example')).status, 403);
+    assert.equal((await login('my-user', 'test-pass', 'null')).status, 403);
     assert.equal((await login('wrong')).status, 401);
     const signedIn = await login();
     assert.equal(signedIn.status, 303);

@@ -56,7 +56,8 @@ export function createServer(config = process.env, fetcher = fetch) {
   };
   const loginPage = async (res, error = '', status = 200) => {
     const html = (await readFile(new URL('./public/login.html', import.meta.url), 'utf8')).replace('<!--login-error-->', error ? `<p role="alert">${error}</p>` : '');
-    res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(html);
+    // Native form POSTs send Origin: null under no-referrer; preserve it for same-origin sign-in.
+    res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'same-origin' }); res.end(html);
   };
   const redirect = (res, location) => { res.writeHead(303, { Location: location, 'Cache-Control': 'no-store' }); res.end(); };
   // ponytail: one personal-user budget per process; use a shared limiter for multiple replicas.
