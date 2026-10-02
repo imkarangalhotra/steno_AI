@@ -6,7 +6,7 @@ let miniWindow = null, openingMini = false;
 function syncMini() {
   if (!miniWindow || miniWindow.closed) return;
   const mini = (id) => miniWindow.document.getElementById(id);
-  mini('mini-record').textContent = busy ? 'Processing…' : $('record').textContent;
+  mini('mini-label').textContent = pendingMic ? 'Starting…' : busy ? 'Processing…' : recorder?.state === 'recording' ? 'Stop recording' : 'Start recording';
   mini('mini-record').disabled = $('record').disabled;
   mini('mini-record').classList.toggle('recording', recorder?.state === 'recording');
   mini('mini-record').setAttribute('aria-keyshortcuts', $('record').getAttribute('aria-keyshortcuts'));
@@ -18,14 +18,14 @@ async function openMini() {
   if (!window.documentPictureInPicture?.requestWindow) return message('Your browser does not support a floating mini recorder. Use the main page instead.', true);
   openingMini = true; $('open-mini').disabled = true;
   try {
-    const floating = await window.documentPictureInPicture.requestWindow({ width: 300, height: 100, preferInitialWindowPlacement: true, disallowReturnToOpener: true });
+    const floating = await window.documentPictureInPicture.requestWindow({ width: 200, height: 64, preferInitialWindowPlacement: true, disallowReturnToOpener: true });
     floating.document.title = 'Steno mini recorder';
     const stylesheet = floating.document.createElement('link');
     stylesheet.rel = 'stylesheet'; stylesheet.href = window.location.origin + '/style.css';
     floating.document.head.append(stylesheet);
     floating.document.body.className = 'mini-body';
     // Only static markup goes into HTML. Model output is assigned as text/value below.
-    floating.document.body.innerHTML = '<button id="mini-record" type="button" class="primary"></button>';
+    floating.document.body.innerHTML = '<button id="mini-record" type="button" class="primary"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg><span id="mini-label">Start recording</span></button>';
     miniWindow = floating;
     const mini = (id) => floating.document.getElementById(id);
     mini('mini-record').onclick = toggle;

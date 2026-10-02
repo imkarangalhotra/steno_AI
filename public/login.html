@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#174e43"><link rel="icon" href="/icon.svg">
+  <link rel="stylesheet" href="/style.css"><title>Sign in to Steno</title>
+</head>
+<body>
+<main class="login">
+  <header><a class="brand" href="/">steno<span>YOUR VOICE, CLEARLY WRITTEN</span></a></header>
+  <section class="workspace">
+    <h1>Welcome back.</h1>
+    <!--login-error-->
+    <form method="post" action="/login">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" required autofocus maxlength="200">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="2000">
+      <button class="primary" type="submit">Open Steno</button>
+    </form>
+  </section>
+</main>
+</body></html>

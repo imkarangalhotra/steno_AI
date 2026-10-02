@@ -161,7 +161,7 @@ test('browser controller copies only successful results and preserves text on er
   assert.match(field('status').textContent, /cannot be remembered/);
   assert.equal(field('open-mini').hidden, true);
   let requests = 0;
-  const miniFields = new Map(['mini-record'].map((id) => [id, {
+  const miniFields = new Map(['mini-record', 'mini-label'].map((id) => [id, {
     classList: { toggle() {} }, setAttribute(name, value) { this[name] = value; }, focus() {}, select() { this.selected = true; },
   }]));
   const miniEvents = {}, miniDocumentEvents = {};
@@ -172,11 +172,12 @@ test('browser controller copies only successful results and preserves text on er
     addEventListener(name, callback) { miniEvents[name] = callback; },
     close() { this.closed = true; miniEvents.pagehide?.(); },
   };
-  context.window.documentPictureInPicture = { async requestWindow() { requests++; return floating; } };
+  context.window.documentPictureInPicture = { async requestWindow(options) { requests++; assert.equal(options.width, 200); assert.equal(options.height, 64); return floating; } };
   vm.runInNewContext(source, { ...context });
   assert.equal(field('open-mini').hidden, false);
   await field('open-mini').onclick();
-  assert.equal(floating.document.body.innerHTML, '<button id="mini-record" type="button" class="primary"></button>');
+  assert.match(floating.document.body.innerHTML, /<svg.*aria-hidden="true"/);
+  assert.equal(miniFields.get('mini-label').textContent, 'Start recording');
   await field('open-mini').onclick();
   assert.equal(requests, 1);
   assert.equal(floating.focused, true);
@@ -184,7 +185,7 @@ test('browser controller copies only successful results and preserves text on er
   context.document.hidden = true;
   documentEvents.visibilitychange();
   assert.equal(currentRecorder.state, 'recording');
-  assert.equal(miniFields.get('mini-record').textContent, '■ Stop recording');
+  assert.equal(miniFields.get('mini-label').textContent, 'Stop recording');
   await miniDocumentEvents.keydown(shortcut);
   await currentRecorder.finished;
   assert.equal(field('result').value, 'Finished words');

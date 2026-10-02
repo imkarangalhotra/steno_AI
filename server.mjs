@@ -1,6 +1,6 @@
 import http from 'node:http';
 import { readFile } from 'node:fs/promises';
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { needsRomanization, safeText } from './public/text.js';
@@ -42,9 +42,26 @@ function send(res, status, data) {
 export function createServer(config = process.env, fetcher = fetch) {
   const password = config.APP_PASSWORD || '';
   const username = config.APP_USERNAME || 'steno';
-  const expectedAuth = Buffer.from('Basic ' + Buffer.from(`${username}:${password}`).toString('base64'));
+  const sessionAge = 90 * 24 * 60 * 60;
+  const secureCookie = config.PUBLIC_ORIGIN?.startsWith('https://');
+  const cookieName = secureCookie ? '__Host-steno-session' : 'steno-session';
+  const equal = (a, b) => timingSafeEqual(createHash('sha256').update(a).digest(), createHash('sha256').update(b).digest());
+  const sign = (expires) => `${expires}.${createHmac('sha256', password).update(`${username}:${expires}`).digest('hex')}`;
+  const authenticated = (req) => {
+    if (!password) return true;
+    const token = (req.headers.cookie || '').split(';').map((part) => part.trim()).find((part) => part.startsWith(cookieName + '='))?.slice(cookieName.length + 1) || '';
+    if (!/^\d{13}\.[a-f0-9]{64}$/.test(token)) return false;
+    const expires = token.split('.')[0];
+    return Number(expires) > Date.now() && Number(expires) <= Date.now() + sessionAge * 1000 && equal(token, sign(expires));
+  };
+  const loginPage = async (res, error = '', status = 200) => {
+    const html = (await readFile(new URL('./public/login.html', import.meta.url), 'utf8')).replace('<!--login-error-->', error ? `<p role="alert">${error}</p>` : '');
+    res.writeHead(status, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(html);
+  };
+  const redirect = (res, location) => { res.writeHead(303, { Location: location, 'Cache-Control': 'no-store' }); res.end(); };
   // ponytail: one personal-user budget per process; use a shared limiter for multiple replicas.
   let windowStart = Date.now(), used = 0, active = 0;
+  let loginWindow = Date.now(), loginFailures = 0;
   async function groq(path, options) {
     let response;
     try {
@@ -81,12 +98,29 @@ export function createServer(config = process.env, fetcher = fetch) {
     try {
       const url = new URL(req.url, 'http://localhost');
       if (req.method === 'GET' && url.pathname === '/healthz') return send(res, 200, { ok: true });
-      if (password) {
-        const supplied = Buffer.from(req.headers.authorization || '');
-        if (supplied.length !== expectedAuth.length || !timingSafeEqual(supplied, expectedAuth)) {
-          res.setHeader('WWW-Authenticate', 'Basic realm="Steno", charset="UTF-8"');
-          return send(res, 401, { error: 'Sign in with your app username and password.' });
+      const origin = config.PUBLIC_ORIGIN || `http://${req.headers.host}`;
+      if (url.pathname === '/login') {
+        if (authenticated(req)) return redirect(res, '/');
+        if (req.method === 'GET') return await loginPage(res);
+        if (req.method === 'POST') {
+          if (req.headers.origin !== origin || (!config.PUBLIC_ORIGIN && !['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname))) throw fail('Request must come from the Steno page.', 403);
+          if ((req.headers['content-type'] || '').split(';')[0] !== 'application/x-www-form-urlencoded') throw fail('Invalid login request.');
+          if (Date.now() - loginWindow >= 60000) { loginWindow = Date.now(); loginFailures = 0; }
+          if (loginFailures >= 5) return await loginPage(res, 'Too many attempts. Wait a minute and try again.', 429);
+          const form = new URLSearchParams((await readBody(req, 4096)).toString());
+          if (!equal(form.get('username') || '', username) || !equal(form.get('password') || '', password)) {
+            loginFailures++;
+            return await loginPage(res, 'Incorrect username or password. Please try again.', 401);
+          }
+          loginFailures = 0;
+          res.setHeader('Set-Cookie', `${cookieName}=${sign(Date.now() + sessionAge * 1000)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${sessionAge}${secureCookie ? '; Secure' : ''}`);
+          return redirect(res, '/');
         }
+        return send(res, 404, { error: 'Not found.' });
+      }
+      if (!authenticated(req) && !['/style.css', '/icon.svg', '/icon-192.png', '/icon-512.png'].includes(url.pathname)) {
+        if (req.method === 'GET' && url.pathname === '/') return redirect(res, '/login');
+        return send(res, 401, { error: 'Sign in on the Steno login page to continue.' });
       }
       if (req.method === 'GET' && url.pathname === '/api/status') return send(res, 200, { configured: Boolean(config.GROQ_API_KEY) });
       if (req.method === 'GET' && assets.has(url.pathname)) {
@@ -96,7 +130,6 @@ export function createServer(config = process.env, fetcher = fetch) {
         return res.end(data);
       }
       if (req.method !== 'POST' || !['/api/process', '/api/normalize'].includes(url.pathname)) return send(res, 404, { error: 'Not found.' });
-      const origin = config.PUBLIC_ORIGIN || `http://${req.headers.host}`;
       if (!config.PUBLIC_ORIGIN && !['localhost', '127.0.0.1', '[::1]'].includes(new URL(origin).hostname)) throw fail('Configure the public origin before hosting.', 403);
       if (req.headers.origin !== origin || req.headers['x-steno'] !== '1') throw fail('Request must come from the Steno page.', 403);
       const type = (req.headers['content-type'] || '').split(';')[0];
