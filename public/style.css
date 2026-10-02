@@ -14,7 +14,7 @@ kbd{font:inherit;font-weight:650}
 .muted button{font-size:11px;padding:5px 8px;margin-top:4px}
 .mini-launch{text-align:center;margin-top:10px}.mini-launch button{font-size:12px;padding:7px 12px}
 .mini-body{background:#f7f7ef;height:100vh;padding:6px;display:grid;place-items:center;overflow:hidden}
-#mini-record{width:100%;max-width:220px;min-height:44px;padding:10px;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px;white-space:nowrap}#mini-record svg{flex-shrink:0}#mini-record.recording{background:#a03c35;border-color:#a03c35}
+#mini-record{width:44px;height:44px;padding:0;border-radius:50%;display:flex;align-items:center;justify-content:center}#mini-record svg{flex-shrink:0}#mini-record.recording{background:#a03c35;border-color:#a03c35}
 #timer{grid-column:3;justify-self:start;font-variant-numeric:tabular-nums;font-size:14px;color:#607565}
 button{font:inherit;font-size:14px;font-weight:650;padding:12px 18px;border:1px solid #d8dfd2;border-radius:10px;background:white;color:#264b3c;cursor:pointer}
 .primary{background:#174e43;color:#fff;border-color:#174e43}
