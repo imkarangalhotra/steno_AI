@@ -41,7 +41,8 @@ function send(res, status, data) {
 
 export function createServer(config = process.env, fetcher = fetch) {
   const password = config.APP_PASSWORD || '';
-  const expectedAuth = Buffer.from('Basic ' + Buffer.from(`steno:${password}`).toString('base64'));
+  const username = config.APP_USERNAME || 'steno';
+  const expectedAuth = Buffer.from('Basic ' + Buffer.from(`${username}:${password}`).toString('base64'));
   // ponytail: one personal-user budget per process; use a shared limiter for multiple replicas.
   let windowStart = Date.now(), used = 0, active = 0;
   async function groq(path, options) {
@@ -84,7 +85,7 @@ export function createServer(config = process.env, fetcher = fetch) {
         const supplied = Buffer.from(req.headers.authorization || '');
         if (supplied.length !== expectedAuth.length || !timingSafeEqual(supplied, expectedAuth)) {
           res.setHeader('WWW-Authenticate', 'Basic realm="Steno", charset="UTF-8"');
-          return send(res, 401, { error: 'Sign in with username steno and your app password.' });
+          return send(res, 401, { error: 'Sign in with your app username and password.' });
         }
       }
       if (req.method === 'GET' && url.pathname === '/api/status') return send(res, 200, { configured: Boolean(config.GROQ_API_KEY) });

@@ -26,10 +26,11 @@ Deploy this repository as a Node service (start command `npm start`) or use the 
 | PORT | Host-provided port, or 3200 |
 | GROQ_API_KEY | Your private provider key |
 | TEXT_MODEL | Available multilingual text model; defaults to qwen/qwen3.8-27b |
+| APP_USERNAME | Optional custom login username; defaults to steno |
 | APP_PASSWORD | A strong private password for your personal app |
 | PUBLIC_ORIGIN | Exact public HTTPS origin, e.g. https://steno.example.com, no trailing slash |
 
-Configure `/healthz` for health checks. The host/reverse proxy must provide HTTPS, preserve the request Host, allow audio uploads up to 24 MB, and allow processing requests lasting up to 285 seconds. Generate the hostname first, then set `PUBLIC_ORIGIN` and redeploy. No persistent disk is required. No credentials are baked into the container. Browser login username is `steno`; password is `APP_PASSWORD`. Do not use hosted Basic authentication over plain HTTP. Binding beyond loopback is refused without a password and HTTPS origin.
+Configure `/healthz` for health checks. The host/reverse proxy must provide HTTPS, preserve the request Host, allow audio uploads up to 24 MB, and allow processing requests lasting up to 285 seconds. Generate the hostname first, then set `PUBLIC_ORIGIN` and redeploy. No persistent disk is required. No credentials are baked into the container. Browser login username defaults to `steno`; set `APP_USERNAME` to change it. Set `APP_PASSWORD` to change the password. Save the variables and redeploy for changes to take effect. Do not use hosted Basic authentication over plain HTTP. Binding beyond loopback is refused without a password and HTTPS origin.
 
 This is a long-running Node service, not a static-only site. Netlify requires a serverless backend adaptation and checking upload/time limits; the current deployment target is a Node/Docker host. No provider account or deployment has been created yet.
 

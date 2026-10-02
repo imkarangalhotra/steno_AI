@@ -27,16 +27,20 @@ test('real HTTP pipeline preserves original source, handles failures and protect
     const text = body.messages[0].content.startsWith('Transliterate') ? 'Meeting cancel nahi, Friday pe shift kar do.' : replyText;
     return Response.json({ choices: [{ finish_reason: finish, message: { content: text } }] }, { status: providerStatus });
   };
-  const server = createServer({ GROQ_API_KEY: 'mock-private-key', APP_PASSWORD: 'test-pass' }, provider);
+  const server = createServer({ GROQ_API_KEY: 'mock-private-key', APP_USERNAME: 'my-user', APP_PASSWORD: 'test-pass' }, provider);
   await new Promise((done) => server.listen(0, '127.0.0.1', done));
   const origin = `http://127.0.0.1:${server.address().port}`;
-  const auth = 'Basic ' + Buffer.from('steno:test-pass').toString('base64');
+  const auth = 'Basic ' + Buffer.from('my-user:test-pass').toString('base64');
   const headers = { Authorization: auth, Origin: origin, 'X-Steno': '1', 'Content-Type': 'application/json' };
   const post = (data) => fetch(origin + '/api/process', { method: 'POST', headers, body: JSON.stringify(data) });
   try {
     assert.equal((await fetch(origin + '/healthz')).status, 200);
     assert.equal((await fetch(origin)).status, 401);
-    assert.equal((await fetch(origin, { headers: { Authorization: auth } })).status, 200);
+    assert.equal((await fetch(origin, { headers: { Authorization: 'Basic ' + Buffer.from('steno:test-pass').toString('base64') } })).status, 401);
+    const page = await fetch(origin, { headers: { Authorization: auth } });
+    assert.equal(page.status, 200);
+    assert.equal(page.headers.has('www-authenticate'), false);
+    assert.equal((await page.text()).includes('mock-private-key'), false);
     assert.equal((await fetch(origin + '/.env', { headers: { Authorization: auth } })).status, 404);
     assert.equal((await fetch(origin + '/api/process', { method: 'POST', headers: { ...headers, Origin: 'https://evil.example' }, body: '{}' })).status, 403);
     assert.equal((await post({ text: 'Hello', output: 'hindi', style: 'natural' })).status, 400);
