@@ -32,7 +32,7 @@ test('real HTTP pipeline preserves original source, handles failures and protect
     const text = body.messages[0].content.startsWith('Transliterate') ? 'Meeting cancel nahi, Friday pe shift kar do.' : replyText;
     return Response.json({ choices: [{ finish_reason: finish, message: { content: text } }] }, { status: providerStatus });
   };
-  const server = createServer({ GROQ_API_KEY: 'mock-private-key', APP_USERNAME: 'my-user', APP_PASSWORD: 'test-pass' }, provider);
+  const server = createServer({ DICTIONARY_PATH: ':memory:', GROQ_API_KEY: 'mock-private-key', APP_USERNAME: 'my-user', APP_PASSWORD: 'test-pass' }, provider);
   await new Promise((done) => server.listen(0, '127.0.0.1', done));
   const origin = `http://127.0.0.1:${server.address().port}`;
   const login = await fetch(origin + '/login', { method: 'POST', redirect: 'manual', headers: { Origin: origin, 'Content-Type': 'application/x-www-form-urlencoded' }, body: new URLSearchParams({ username: 'my-user', password: 'test-pass' }) });
@@ -90,7 +90,7 @@ test('real HTTP pipeline preserves original source, handles failures and protect
 });
 
 test('page login sets a protected persistent session and rejects invalid credentials and cookies', async () => {
-  const config = { APP_USERNAME: 'my-user', APP_PASSWORD: 'test-pass', PUBLIC_ORIGIN: 'https://steno.example' };
+  const config = { DICTIONARY_PATH: ':memory:', APP_USERNAME: 'my-user', APP_PASSWORD: 'test-pass', PUBLIC_ORIGIN: 'https://steno.example' };
   let server = createServer(config);
   const start = async () => { await new Promise((done) => server.listen(0, '127.0.0.1', done)); return `http://127.0.0.1:${server.address().port}`; };
   const close = async () => { server.closeAllConnections(); await new Promise((done) => server.close(done)); };
@@ -131,7 +131,7 @@ test('page login sets a protected persistent session and rejects invalid credent
 });
 
 test('missing key and oversized requests fail without calling provider', async () => {
-  const server = createServer({}, () => { throw new Error('Must not call provider'); });
+  const server = createServer({ DICTIONARY_PATH: ':memory:' }, () => { throw new Error('Must not call provider'); });
   await new Promise((done) => server.listen(0, '127.0.0.1', done));
   const origin = `http://127.0.0.1:${server.address().port}`;
   const headers = { Origin: origin, 'X-Steno': '1', 'Content-Type': 'application/json' };

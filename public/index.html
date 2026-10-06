@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
   <meta name="theme-color" content="#174e43"><meta name="description" content="Speak freely. Write clearly. English and Hinglish voice writing.">
   <link rel="manifest" href="/manifest.webmanifest"><link rel="icon" href="/icon.svg"><link rel="apple-touch-icon" href="/icon-192.png">
   <link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script><title>Steno — your voice, clearly written</title>
@@ -10,8 +10,9 @@
 <main>
   <header><a class="brand" href="/">◉ steno<span>YOUR VOICE, CLEARLY WRITTEN</span></a><span class="badge">English + Hinglish</span></header>
   <div class="intro"><h1>Let your words find their flow.</h1></div>
+  <div class="app-layout">
   <section class="workspace" aria-label="Voice writing workspace">
-    <div class="recorder"><button id="record" class="primary" type="button" aria-keyshortcuts="Alt+Shift+R" aria-describedby="record-shortcut">● Say it loud</button><span id="timer" aria-label="Recording duration">00:00</span><span class="muted" id="record-shortcut"><kbd id="shortcut-label">Alt + Shift + R</kbd> to start or stop · page must be focused <button id="change-shortcut" type="button">Change shortcut</button> <button id="reset-shortcut" type="button">Reset</button></span></div>
+    <div class="recorder"><button id="record" class="primary" type="button" aria-keyshortcuts="Alt+Shift+R" aria-describedby="record-shortcut"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg><span id="record-label">Say it loud</span></button><span id="timer" aria-label="Recording duration">00:00</span><span class="muted" id="record-shortcut"><kbd id="shortcut-label">Alt + Shift + R</kbd> to start or stop · page must be focused <button id="change-shortcut" type="button">Change shortcut</button> <button id="reset-shortcut" type="button">Reset</button></span></div>
     <div class="mini-launch"><button id="open-mini" type="button" hidden>↗ Open mini recorder</button></div>
     <p id="status" role="status" aria-live="polite">Ready when you are.</p>
     <div class="settings">
@@ -26,6 +27,16 @@
     <div class="actions"><button id="rewrite" type="button">Refine text</button><button id="retry" type="button" hidden>Retry recording</button><label class="check"><input id="autocopy" type="checkbox" checked> Copy automatically</label><button id="copy" type="button" class="primary" disabled>Copy text</button></div>
     <p class="hint">Copy, then paste wherever you’re writing. Keep this page active, or use the floating mini recorder.</p>
   </section>
-  <footer><p>Audio and text are processed by our AI provider. Steno keeps no saved dictation history.</p><p>Use it in your browser, or add it to your home screen. Processing requires internet.</p><p id="setup" role="status"></p></footer>
+  <aside class="dictionary" aria-labelledby="dictionary-title">
+    <div class="dictionary-heading"><h2 id="dictionary-title">My dictionary</h2><span id="dictionary-sync" class="sync-state" role="status">Loading…</span></div>
+    <p class="dictionary-subtitle">Saved to your account. Available on all your devices.</p>
+    <div id="dictionary-form-mount"></div>
+    <div class="dictionary-list-heading"><label class="sr-only" for="dictionary-search">Search dictionary</label><input id="dictionary-search" type="search" placeholder="Search dictionary" maxlength="80"><button id="dictionary-refresh" type="button" aria-label="Refresh dictionary" title="Refresh dictionary">↻</button></div>
+    <div class="dictionary-list-caption"><span>Saved entries</span><span id="dictionary-count">0 / 100</span></div>
+    <ul id="dictionary-list" aria-label="Saved dictionary entries"></ul>
+    <p id="dictionary-status" class="dictionary-status" role="status" aria-live="polite">Loading your dictionary…</p>
+  </aside>
+  </div>
+  <footer><p>Audio and text are processed by our AI provider. Steno keeps no saved dictation history. Your dictionary is stored in your account.</p><p>Use it in your browser, or add it to your home screen. Processing requires internet.</p><p id="setup" role="status"></p></footer>
 </main>
 </body></html>

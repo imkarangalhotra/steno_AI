@@ -6,7 +6,7 @@ import { needsRomanization, safeText } from '../public/text.js';
 
 test('browser controller copies only successful results and preserves text on errors', async () => {
   const fields = new Map();
-  for (const id of ['status', 'output', 'style', 'language', 'record', 'timer', 'transcript', 'result', 'rewrite', 'retry', 'autocopy', 'copy', 'setup', 'shortcut-label', 'change-shortcut', 'reset-shortcut', 'open-mini']) {
+  for (const id of ['status', 'output', 'style', 'language', 'record', 'record-label', 'timer', 'transcript', 'result', 'rewrite', 'retry', 'autocopy', 'copy', 'setup', 'shortcut-label', 'change-shortcut', 'reset-shortcut', 'open-mini']) {
     fields.set(id, { value: '', checked: id === 'autocopy', hidden: false, events: {},
       classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } }, addEventListener(name, callback) { this.events[name] = callback; },
       focus() { this.events.focus?.(); }, select() { this.selected = true; }, setAttribute(name, value) { this[name] = value; }, getAttribute(name) { return this[name]; },
@@ -24,6 +24,7 @@ test('browser controller copies only successful results and preserves text on er
   const documentEvents = {};
   const stored = new Map();
   const context = { needsRomanization, safeText, URLSearchParams, AbortSignal,
+    createDictionary: () => ({ refresh() {}, mountForm(root, onSaved, onCancel) { return { focus() {}, cancel: onCancel }; } }),
     console: { info() {} },
     localStorage: { getItem: (key) => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value) },
     Blob, MediaRecorder: Recorder, setInterval: () => 1, clearInterval() {},
@@ -37,7 +38,7 @@ test('browser controller copies only successful results and preserves text on er
     },
   };
   context.window.navigator = context.navigator;
-  const source = (await readFile(new URL('../public/app.js', import.meta.url), 'utf8')).replace(/^import .*\n/, '');
+  const source = (await readFile(new URL('../public/app.js', import.meta.url), 'utf8')).replace(/^import .*\n/gm, '');
   vm.runInNewContext(source, context);
   const field = (id) => fields.get(id);
   field('transcript').value = 'Hello';
@@ -161,18 +162,19 @@ test('browser controller copies only successful results and preserves text on er
   assert.match(field('status').textContent, /cannot be remembered/);
   assert.equal(field('open-mini').hidden, true);
   let requests = 0;
-  const miniFields = new Map(['mini-record', 'mini-label'].map((id) => [id, {
+  const miniFields = new Map(['mini-record', 'mini-label', 'mini-teach', 'mini-status', 'mini-back', 'mini-recorder', 'mini-teaching', 'mini-form-mount'].map((id) => [id, {
     classList: { toggle() {} }, setAttribute(name, value) { this[name] = value; }, focus() {}, select() { this.selected = true; },
   }]));
   const miniEvents = {}, miniDocumentEvents = {};
   const floating = {
     closed: false, navigator: context.navigator, focus() { this.focused = true; },
-    document: { head: { append() {} }, body: {}, createElement: () => ({}), getElementById: (id) => miniFields.get(id),
+    resizeTo(width, height) { this.size = [width, height]; },
+    document: { head: { append() {} }, body: { classList: { add() {}, remove() {} } }, createElement: () => ({}), getElementById: (id) => miniFields.get(id),
       hasFocus: () => true, addEventListener(name, callback) { miniDocumentEvents[name] = callback; } },
     addEventListener(name, callback) { miniEvents[name] = callback; },
     close() { this.closed = true; miniEvents.pagehide?.(); },
   };
-  context.window.documentPictureInPicture = { async requestWindow(options) { requests++; assert.equal(options.width, 200); assert.equal(options.height, 64); return floating; } };
+  context.window.documentPictureInPicture = { async requestWindow(options) { requests++; assert.equal(options.width, 320); assert.equal(options.height, 110); return floating; } };
   vm.runInNewContext(source, { ...context });
   assert.equal(field('open-mini').hidden, false);
   await field('open-mini').onclick();
@@ -182,6 +184,15 @@ test('browser controller copies only successful results and preserves text on er
   await field('open-mini').onclick();
   assert.equal(requests, 1);
   assert.equal(floating.focused, true);
+  miniFields.get('mini-teach').onclick();
+  assert.equal(miniFields.get('mini-recorder').hidden, true);
+  assert.equal(miniFields.get('mini-teaching').hidden, false);
+  assert.deepEqual(floating.size, [360, 480]);
+  await miniDocumentEvents.keydown(shortcut);
+  assert.equal(currentRecorder.state, 'inactive');
+  await miniDocumentEvents.keydown({ code: 'Escape', preventDefault() {} });
+  assert.equal(miniFields.get('mini-recorder').hidden, false);
+  assert.equal(miniFields.get('mini-teaching').hidden, true);
   await miniFields.get('mini-record').onclick();
   context.document.hidden = true;
   documentEvents.visibilitychange();

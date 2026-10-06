@@ -1,5 +1,6 @@
 *
 !package.json
 !server.mjs
+!dictionary.mjs
 !public
 !public/**
