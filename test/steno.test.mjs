@@ -8,11 +8,15 @@ test('language policy rejects Devanagari rather than deleting it', () => {
   assert.equal(needsRomanization('Mujhe meeting ka time bata dena.'), false);
   assert.equal(needsRomanization('मुझे meeting का time बता देना'), true);
   assert.equal(needsRomanization('१२३'), true);
+  assert.equal(needsRomanization('مجھے meeting کا وقت بتا دینا'), true);
+  assert.throws(() => safeText('مجھے meeting کا وقت بتا دینا'));
   assert.throws(() => safeText('Hello नमस्ते'));
   assert.throws(() => safeText('  '));
   assert.match(instructions('hinglish', 'literary'), /intentional ambiguity/);
   assert.match(instructions('keep', 'natural'), /Do NOT translate Roman Hindi into English/);
-  assert.match(instructions('hinglish', 'literary'), /do not return English-only sentences/);
+  assert.match(instructions('hinglish', 'literary'), /do NOT translate its English phrases into Hindi/);
+  assert.match(instructions('hinglish', 'natural'), /entirely English, translate/);
+  assert.match(instructions('keep', 'natural'), /Already grammatical wording must remain unchanged/);
   assert.throws(() => instructions('hindi', 'natural'));
 });
 
@@ -22,7 +26,7 @@ test('real HTTP pipeline preserves original source, handles failures and protect
   let finish = 'stop'; let providerStatus = 200;
   const provider = async (url, options) => {
     calls.push({ url, options });
-    if (url.endsWith('/audio/transcriptions')) return Response.json({ text: 'मीटिंग cancel नहीं, Friday पे shift कर दो।' });
+    if (url.endsWith('/audio/transcriptions')) return Response.json({ text: 'میٹنگ cancel نہیں، Friday پہ shift کر دو۔' });
     const body = JSON.parse(options.body);
     if (providerStatus === 403) return Response.json({ error: { code: 'model_permission_blocked_project', message: 'Sensitive raw provider detail' } }, { status: 403 });
     const text = body.messages[0].content.startsWith('Transliterate') ? 'Meeting cancel nahi, Friday pe shift kar do.' : replyText;
@@ -52,14 +56,15 @@ test('real HTTP pipeline preserves original source, handles failures and protect
     assert.equal((await post({ text: 'Hello', output: 'hindi', style: 'natural' })).status, 400);
     assert.equal((await fetch(origin + '/api/process', { method: 'POST', headers, body: '{' })).status, 400);
     assert.equal(calls.length, 0);
-    const audio = await fetch(origin + '/api/process?output=keep&style=natural&language=', { method: 'POST', headers: { ...headers, 'Content-Type': 'audio/webm;codecs=opus' }, body: 'fake-audio' });
+    const audio = await fetch(origin + '/api/process?output=keep&style=natural&language=hi', { method: 'POST', headers: { ...headers, 'Content-Type': 'audio/webm;codecs=opus' }, body: 'fake-audio' });
     assert.equal(audio.status, 200);
     const result = await audio.json();
     assert.equal(needsRomanization(result.transcript), false);
     assert.equal(needsRomanization(result.result), false);
     assert.equal(calls.length, 3);
-    assert.match(JSON.parse(calls[2].options.body).messages[1].content, /मीटिंग/);
+    assert.match(JSON.parse(calls[2].options.body).messages[1].content, /میٹنگ/);
     assert.equal(calls[0].options.body.get('model'), 'whisper-large-v3');
+    assert.equal(calls[0].options.body.get('language'), 'hi');
     assert.equal(JSON.stringify(result).includes('mock-private-key'), false);
     replyText = 'नमस्ते';
     const rejected = await post({ text: 'Hello', output: 'hinglish', style: 'natural' });
