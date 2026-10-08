@@ -6,14 +6,15 @@ import { needsRomanization, safeText } from '../public/text.js';
 
 test('browser controller copies only successful results and preserves text on errors', async () => {
   const fields = new Map();
-  for (const id of ['status', 'output', 'style', 'language', 'record', 'record-label', 'timer', 'transcript', 'result', 'rewrite', 'retry', 'autocopy', 'copy', 'setup', 'shortcut-label', 'change-shortcut', 'reset-shortcut', 'open-mini']) {
+  for (const id of ['status', 'output', 'style', 'language', 'model', 'record', 'record-label', 'timer', 'transcript', 'result', 'rewrite', 'retry', 'autocopy', 'copy', 'setup', 'shortcut-label', 'change-shortcut', 'reset-shortcut', 'open-mini']) {
     fields.set(id, { value: '', checked: id === 'autocopy', hidden: false, events: {},
       classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } }, addEventListener(name, callback) { this.events[name] = callback; },
       focus() { this.events.focus?.(); }, select() { this.selected = true; }, setAttribute(name, value) { this[name] = value; }, getAttribute(name) { return this[name]; },
+      replaceChildren(...children) { this.children = children; this.value = children[0]?.value || ''; },
       setRangeText(text, start, end) { this.value = this.value.slice(0, start) + text + this.value.slice(end); } });
   }
-  fields.get('output').value = 'keep'; fields.get('style').value = 'natural';
-  const copied = []; let failCopy = false, failProcess = false, failNormalize = false;
+  fields.get('output').value = 'keep'; fields.get('style').value = 'natural'; fields.get('model').value = 'qwen';
+  const copied = [], requestsMade = []; let failCopy = false, failProcess = false, failNormalize = false;
   let currentRecorder, stoppedTracks = 0;
   class Recorder {
     static isTypeSupported(type) { return type.startsWith('audio/webm'); }
@@ -29,10 +30,11 @@ test('browser controller copies only successful results and preserves text on er
     localStorage: { getItem: (key) => stored.get(key) ?? null, setItem: (key, value) => stored.set(key, value) },
     Blob, MediaRecorder: Recorder, setInterval: () => 1, clearInterval() {},
     navigator: { mediaDevices: { async getUserMedia() { return { getTracks: () => [{ stop() { stoppedTracks++; } }] }; } }, clipboard: { async writeText(text) { if (failCopy) throw new Error('Denied'); copied.push(text); } } },
-    document: { getElementById: (id) => fields.get(id), addEventListener(name, callback) { documentEvents[name] = callback; } },
+    document: { createElement: () => ({}), getElementById: (id) => fields.get(id), addEventListener(name, callback) { documentEvents[name] = callback; } },
     window: { MediaRecorder: Recorder, location: { origin: 'http://localhost:3200' }, addEventListener() {} },
-    fetch: async (path) => {
-      if (path === '/api/status') return Response.json({ configured: false });
+    fetch: async (path, options) => {
+      requestsMade.push({ path, options });
+      if (path === '/api/status') return Response.json({ configured: false, models: [{ id: 'qwen', label: 'Qwen' }, { id: 'gpt-oss', label: 'GPT-OSS 120B' }] });
       if (path === '/api/normalize') return Response.json(failNormalize ? { error: 'Unavailable' } : { transcript: 'Namaste' }, { status: failNormalize ? 502 : 200 });
       return Response.json(failProcess ? { error: 'Provider rate limit reached.', transcript: 'Original words' } : { transcript: 'Original words', result: 'Finished words' }, { status: failProcess ? 502 : 200 });
     },
@@ -42,7 +44,11 @@ test('browser controller copies only successful results and preserves text on er
   vm.runInNewContext(source, context);
   const field = (id) => fields.get(id);
   field('transcript').value = 'Hello';
+  field('model').value = 'gpt-oss';
   await field('rewrite').onclick();
+  assert.equal(JSON.parse(requestsMade.find(request => request.path === '/api/process').options.body).model, 'gpt-oss');
+  assert.equal(field('model').children[1].textContent, 'GPT-OSS 120B');
+  assert.equal(field('model').value, 'gpt-oss');
   assert.equal(field('result').value, 'Finished words');
   assert.deepEqual(copied, ['Finished words']);
   assert.match(field('status').textContent, /Copied/);
@@ -75,9 +81,11 @@ test('browser controller copies only successful results and preserves text on er
   await field('record').onclick();
   assert.equal(field('record').disabled, false);
   assert.equal(field('rewrite').disabled, true);
+  assert.equal(field('model').disabled, true);
   field('record').onclick();
   await currentRecorder.finished;
   assert.equal(copied.length, 2);
+  assert.match(requestsMade.find(request => request.path.startsWith('/api/process?')).path, /model=gpt-oss/);
   assert.equal(field('record').disabled, false);
   assert.equal(stoppedTracks, 1);
   await field('record').onclick();

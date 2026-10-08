@@ -104,7 +104,7 @@ function controls() {
   const listening = recorder?.state === 'recording';
   if ((busy || listening) && choosingShortcut) { choosingShortcut = false; showShortcut(); }
   $('record').disabled = busy;
-  for (const id of ['rewrite', 'retry', 'output', 'style', 'language', 'change-shortcut', 'reset-shortcut']) $(id).disabled = busy || listening;
+  for (const id of ['rewrite', 'retry', 'output', 'style', 'language', 'model', 'change-shortcut', 'reset-shortcut']) $(id).disabled = busy || listening;
   $('transcript').readOnly = busy || listening;
   $('result').readOnly = busy || listening;
   $('copy').disabled = busy || listening || !$('result').value.trim();
@@ -139,7 +139,7 @@ async function process(audio = false) {
   busy = true; controls();
   message(audio ? 'Turning your recording into words…' : 'Refining your words…');
   try {
-    const options = { output: $('output').value, style: $('style').value };
+    const options = { output: $('output').value, style: $('style').value, model: $('model').value };
     const path = audio ? '/api/process?' + new URLSearchParams({ ...options, language: recording.language }) : '/api/process';
     const data = await request(path, audio ? recording.blob : JSON.stringify({ ...options, text: $('transcript').value }), audio ? recording.blob.type : 'application/json');
     $('result').value = safeText(data.result);
@@ -219,7 +219,7 @@ for (const id of ['transcript', 'result']) {
     const start = field.selectionStart, end = field.selectionEnd;
     busy = true; controls(); message('Writing your pasted Hindi in Latin letters…');
     try {
-      const response = await fetch('/api/normalize', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Steno': '1' }, body: JSON.stringify({ text }), signal: AbortSignal.timeout(100000) });
+      const response = await fetch('/api/normalize', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Steno': '1' }, body: JSON.stringify({ text, model: $('model').value }), signal: AbortSignal.timeout(100000) });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not Romanize the passage.');
       field.setRangeText(safeText(data.transcript), start, end, 'end'); previous = field.value;
@@ -273,6 +273,14 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('pagehide', () => { discard = true; stop(); stream?.getTracks().forEach((track) => track.stop()); miniWindow?.close(); });
 window.addEventListener('offline', () => message('You’re offline. Your current text is still here; processing needs internet.', true));
 fetch('/api/status').then((res) => res.json()).then((data) => {
+  if (Array.isArray(data.models) && data.models.length) {
+    const selected = $('model').value;
+    const options = data.models.map(({ id, label }) => {
+      const option = document.createElement('option'); option.value = id; option.textContent = label; return option;
+    });
+    $('model').replaceChildren(...options);
+    if (data.models.some(({ id }) => id === selected)) $('model').value = selected;
+  }
   $('setup').textContent = data.configured ? '' : 'Processing setup is pending. The editor and microphone are available.';
 }).catch(() => { $('setup').textContent = 'Reconnect to the server to process your words.'; });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});

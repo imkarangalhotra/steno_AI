@@ -16,10 +16,12 @@
     <div class="mini-launch"><button id="open-mini" type="button" hidden>↗ Open mini recorder</button></div>
     <p id="status" role="status" aria-live="polite">Ready when you are.</p>
     <div class="settings">
+      <label>Reasoning model<select id="model"><option value="qwen">Qwen</option></select></label>
       <label>Write in<select id="output"><option value="keep">Keep my language</option><option value="english">English</option><option value="hinglish">Hinglish</option></select></label>
       <label>Writing style<select id="style"><option value="natural">Clean & natural</option><option value="literary">Literary</option></select></label>
       <label>Spoken language<select id="language"><option value="hi">Hindi / Hinglish</option><option value="en">English</option><option value="">Auto-detect</option></select></label>
     </div>
+    <p class="model-hint">Both models use your dictionary and writing rules. Choose a model, then record or refine the same transcript to compare.</p>
     <div class="editors">
       <label class="editor"><span>What you said <small>Editable transcript</small></span><textarea id="transcript" maxlength="20000" placeholder="Your words appear here. Or type or paste a passage to get started." spellcheck="false"></textarea></label>
       <label class="editor"><span>Your finished text <small>Ready to make your own</small></span><textarea id="result" placeholder="Clearer writing. The same you." spellcheck="false"></textarea></label>
