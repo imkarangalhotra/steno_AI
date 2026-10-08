@@ -62,7 +62,7 @@ test('real HTTP pipeline preserves original source, handles failures and protect
     assert.equal(needsRomanization(result.transcript), false);
     assert.equal(needsRomanization(result.result), false);
     assert.equal(calls.length, 3);
-    assert.match(JSON.parse(calls[2].options.body).messages[1].content, /میٹنگ/);
+    assert.deepEqual(JSON.parse(JSON.parse(calls[2].options.body).messages[1].content), { source_text: 'میٹنگ cancel نہیں، Friday پہ shift کر دو۔' });
     assert.equal(calls[0].options.body.get('model'), 'whisper-large-v3');
     assert.equal(calls[0].options.body.get('language'), 'hi');
     assert.equal(JSON.stringify(result).includes('mock-private-key'), false);
