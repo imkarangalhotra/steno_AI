@@ -16,9 +16,10 @@ kbd{font:inherit;font-weight:650}
 .mini-launch{text-align:center;margin-top:10px}.mini-launch button{font-size:12px;padding:7px 12px}
 .mini-body{background:#f7f7ef;min-height:100dvh;padding:12px;overflow-x:hidden}
 #mini-record{width:100%;min-height:48px;padding:12px;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px;white-space:nowrap}#mini-record svg{flex-shrink:0}#mini-record.recording{background:#a03c35;border-color:#a03c35}
-.mini-footer{display:flex;gap:10px;align-items:center;margin-top:8px;border-top:1px solid #dce3d7;padding-top:6px;min-width:0}
-#mini-teach{border:0;background:transparent;padding:6px 2px;font-size:13px;display:flex;align-items:center;gap:7px;white-space:nowrap}
-#mini-status{margin-left:auto;font-size:12px;color:#637569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.mini-footer{margin-top:8px;border-top:1px solid #dce3d7;padding-top:6px;min-width:0}
+.mini-options{display:flex;gap:5px;align-items:center}.mini-options button{min-height:32px;padding:6px 8px;font-size:12px;white-space:nowrap}.mini-options button[aria-pressed=true]{background:#174e43;border-color:#174e43;color:white}
+#mini-teach{margin-left:auto;display:flex;align-items:center;gap:5px}
+#mini-status{display:block;margin-top:4px;font-size:11px;color:#637569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .mini-heading{display:flex;align-items:center;gap:10px}.mini-heading h2{font:650 18px/1.3 Segoe UI,system-ui,sans-serif;margin:0}.mini-heading button{padding:4px 10px;font-size:25px;border:0;background:transparent}
 .mini-body .dictionary-tabs{margin-top:16px}.mini-body .dictionary-tabs button[aria-pressed=true]{background:white;color:#174e43;box-shadow:0 1px 4px #0001}
 .mini-body .dictionary-tabs{background:#ecede7;padding:3px;border-radius:9px}.mini-body .dictionary-tabs button{border:0;padding:9px 6px;font-size:13px}

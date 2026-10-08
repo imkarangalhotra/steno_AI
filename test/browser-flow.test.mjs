@@ -13,7 +13,7 @@ test('browser controller copies only successful results and preserves text on er
       replaceChildren(...children) { this.children = children; this.value = children[0]?.value || ''; },
       setRangeText(text, start, end) { this.value = this.value.slice(0, start) + text + this.value.slice(end); } });
   }
-  fields.get('output').value = 'keep'; fields.get('style').value = 'natural'; fields.get('model').value = 'qwen';
+  fields.get('output').value = 'english'; fields.get('style').value = 'natural'; fields.get('model').value = 'qwen';
   const copied = [], requestsMade = []; let failCopy = false, failProcess = false, failNormalize = false;
   let currentRecorder, stoppedTracks = 0;
   class Recorder {
@@ -171,7 +171,7 @@ test('browser controller copies only successful results and preserves text on er
   assert.match(field('status').textContent, /cannot be remembered/);
   assert.equal(field('open-mini').hidden, true);
   let requests = 0;
-  const miniFields = new Map(['mini-record', 'mini-label', 'mini-teach', 'mini-status', 'mini-back', 'mini-recorder', 'mini-teaching', 'mini-form-mount'].map((id) => [id, {
+  const miniFields = new Map(['mini-record', 'mini-label', 'mini-english', 'mini-hinglish', 'mini-teach', 'mini-status', 'mini-back', 'mini-recorder', 'mini-teaching', 'mini-form-mount'].map((id) => [id, {
     classList: { toggle() {} }, setAttribute(name, value) { this[name] = value; }, focus() {}, select() { this.selected = true; },
   }]));
   const miniEvents = {}, miniDocumentEvents = {};
@@ -183,13 +183,19 @@ test('browser controller copies only successful results and preserves text on er
     addEventListener(name, callback) { miniEvents[name] = callback; },
     close() { this.closed = true; miniEvents.pagehide?.(); },
   };
-  context.window.documentPictureInPicture = { async requestWindow(options) { requests++; assert.equal(options.width, 320); assert.equal(options.height, 110); return floating; } };
+  context.window.documentPictureInPicture = { async requestWindow(options) { requests++; assert.equal(options.width, 320); assert.equal(options.height, 140); return floating; } };
   vm.runInNewContext(source, { ...context });
   assert.equal(field('open-mini').hidden, false);
   await field('open-mini').onclick();
   assert.match(floating.document.body.innerHTML, /<svg.*aria-hidden="true"/);
   assert.match(floating.document.body.innerHTML, /id="mini-label">Say it loud/);
   assert.equal(miniFields.get('mini-label').textContent, 'Say it loud');
+  assert.equal(miniFields.get('mini-english')['aria-pressed'], 'true');
+  assert.equal(miniFields.get('mini-hinglish')['aria-pressed'], 'false');
+  field('output').value = 'hinglish'; field('output').onchange();
+  assert.equal(miniFields.get('mini-hinglish')['aria-pressed'], 'true');
+  miniFields.get('mini-english').onclick();
+  assert.equal(field('output').value, 'english');
   await field('open-mini').onclick();
   assert.equal(requests, 1);
   assert.equal(floating.focused, true);
@@ -207,8 +213,20 @@ test('browser controller copies only successful results and preserves text on er
   documentEvents.visibilitychange();
   assert.equal(currentRecorder.state, 'recording');
   assert.equal(miniFields.get('mini-label').textContent, 'Stop recording');
-  await miniDocumentEvents.keydown(shortcut);
+  assert.equal(miniFields.get('mini-hinglish').disabled, false);
+  miniFields.get('mini-hinglish').onclick();
+  assert.equal(field('output').value, 'hinglish');
+  assert.equal(miniFields.get('mini-english')['aria-pressed'], 'false');
+  assert.equal(miniFields.get('mini-hinglish')['aria-pressed'], 'true');
+  miniDocumentEvents.keydown(shortcut);
+  assert.equal(miniFields.get('mini-english').disabled, true);
+  miniFields.get('mini-english').onclick();
+  assert.equal(field('output').value, 'hinglish');
   await currentRecorder.finished;
+  assert.match(requestsMade.filter(request => request.path.startsWith('/api/process?')).at(-1).path, /output=hinglish/);
+  // Choosing the active language never deselects it.
+  miniFields.get('mini-hinglish').onclick();
+  assert.equal(miniFields.get('mini-hinglish')['aria-pressed'], 'true');
   assert.equal(field('result').value, 'Finished words');
   assert.match(miniFields.get('mini-record').title, /Copied/);
   await miniFields.get('mini-record').onclick();
