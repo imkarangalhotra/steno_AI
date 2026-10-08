@@ -6,7 +6,7 @@ import { needsRomanization, safeText } from '../public/text.js';
 
 test('browser controller copies only successful results and preserves text on errors', async () => {
   const fields = new Map();
-  for (const id of ['status', 'output', 'style', 'language', 'model', 'record', 'record-label', 'timer', 'transcript', 'result', 'rewrite', 'retry', 'autocopy', 'copy', 'setup', 'shortcut-label', 'change-shortcut', 'reset-shortcut', 'open-mini']) {
+  for (const id of ['status', 'output', 'style', 'model', 'record', 'record-label', 'timer', 'transcript', 'result', 'rewrite', 'retry', 'autocopy', 'copy', 'setup', 'shortcut-label', 'change-shortcut', 'reset-shortcut', 'open-mini']) {
     fields.set(id, { value: '', checked: id === 'autocopy', hidden: false, events: {},
       classList: { toggle() {}, add() {}, remove() {}, contains() { return false; } }, addEventListener(name, callback) { this.events[name] = callback; },
       focus() { this.events.focus?.(); }, select() { this.selected = true; }, setAttribute(name, value) { this[name] = value; }, getAttribute(name) { return this[name]; },
@@ -86,6 +86,7 @@ test('browser controller copies only successful results and preserves text on er
   await currentRecorder.finished;
   assert.equal(copied.length, 2);
   assert.match(requestsMade.find(request => request.path.startsWith('/api/process?')).path, /model=gpt-oss/);
+  assert.match(requestsMade.find(request => request.path.startsWith('/api/process?')).path, /language=en/);
   assert.equal(field('record').disabled, false);
   assert.equal(stoppedTracks, 1);
   await field('record').onclick();

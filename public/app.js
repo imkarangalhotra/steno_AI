@@ -104,7 +104,7 @@ function controls() {
   const listening = recorder?.state === 'recording';
   if ((busy || listening) && choosingShortcut) { choosingShortcut = false; showShortcut(); }
   $('record').disabled = busy;
-  for (const id of ['rewrite', 'retry', 'output', 'style', 'language', 'model', 'change-shortcut', 'reset-shortcut']) $(id).disabled = busy || listening;
+  for (const id of ['rewrite', 'retry', 'output', 'style', 'model', 'change-shortcut', 'reset-shortcut']) $(id).disabled = busy || listening;
   $('transcript').readOnly = busy || listening;
   $('result').readOnly = busy || listening;
   $('copy').disabled = busy || listening || !$('result').value.trim();
@@ -167,7 +167,6 @@ async function toggle() {
     const mimeType = ['audio/webm;codecs=opus', 'audio/mp4', 'audio/ogg;codecs=opus'].find((type) => MediaRecorder.isTypeSupported(type));
     recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
     const chunks = []; let size = 0, failed = false;
-    const language = $('language').value;
     recorder.ondataavailable = ({ data }) => { if (data.size) { chunks.push(data); size += data.size; if (size > 23 * 1024 * 1024) stop(); } };
     recorder.onerror = () => { failed = true; stop(); message('Recording was interrupted. Please record again.', true); };
     recorder.onstop = async () => {
@@ -178,7 +177,7 @@ async function toggle() {
         if (failed || discard) return;
         const blob = new Blob(chunks, { type: recorder.mimeType || mimeType || 'audio/webm' });
         if (!blob.size) return message('No audio was captured. Please try again.', true);
-        recording = { blob, language };
+        recording = { blob, language: 'en' };
         busy = false;
         await process(true);
       } finally { busy = false; controls(); }
