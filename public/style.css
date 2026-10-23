@@ -16,6 +16,7 @@ kbd{font:inherit;font-weight:650}
 .mini-launch{text-align:center;margin-top:10px}.mini-launch button{font-size:12px;padding:7px 12px}
 .mini-body{background:#f7f7ef;min-height:100dvh;padding:12px;overflow-x:hidden}
 #mini-record{width:100%;min-height:48px;padding:12px;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px;white-space:nowrap}#mini-record svg{flex-shrink:0}#mini-record.recording{background:#a03c35;border-color:#a03c35}
+.mini-copy{width:100%;min-height:36px;margin-top:6px;padding:7px 12px}
 .mini-footer{margin-top:8px;border-top:1px solid #dce3d7;padding-top:6px;min-width:0}
 .mini-options{display:flex;gap:5px;align-items:center}.mini-options button{min-height:32px;padding:6px 8px;font-size:12px;white-space:nowrap}.mini-options button[aria-pressed=true]{background:#174e43;border-color:#174e43;color:white}
 #mini-teach{margin-left:auto;display:flex;align-items:center;gap:5px}
