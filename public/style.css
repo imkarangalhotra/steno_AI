@@ -19,12 +19,7 @@ kbd{font:inherit;font-weight:650}
 .mini-copy{width:100%;min-height:36px;margin-top:6px;padding:7px 12px}
 .mini-footer{margin-top:8px;border-top:1px solid #dce3d7;padding-top:6px;min-width:0}
 .mini-options{display:flex;gap:5px;align-items:center}.mini-options button{min-height:32px;padding:6px 8px;font-size:12px;white-space:nowrap}.mini-options button[aria-pressed=true]{background:#174e43;border-color:#174e43;color:white}
-#mini-teach{margin-left:auto;display:flex;align-items:center;gap:5px}
 #mini-status{display:block;margin-top:4px;font-size:11px;color:#637569;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-.mini-heading{display:flex;align-items:center;gap:10px}.mini-heading h2{font:650 18px/1.3 Segoe UI,system-ui,sans-serif;margin:0}.mini-heading button{padding:4px 10px;font-size:25px;border:0;background:transparent}
-.mini-body .dictionary-tabs{margin-top:16px}.mini-body .dictionary-tabs button[aria-pressed=true]{background:white;color:#174e43;box-shadow:0 1px 4px #0001}
-.mini-body .dictionary-tabs{background:#ecede7;padding:3px;border-radius:9px}.mini-body .dictionary-tabs button{border:0;padding:9px 6px;font-size:13px}
-.mini-body .dictionary-form-actions{display:flex}.mini-body .dictionary-form-actions .primary{flex:1}.mini-body .dictionary-subtitle{font-size:12px}
 #timer{grid-column:3;justify-self:start;font-variant-numeric:tabular-nums;font-size:14px;color:#607565}
 button{font:inherit;font-size:14px;font-weight:650;padding:12px 18px;border:1px solid #d8dfd2;border-radius:10px;background:white;color:#264b3c;cursor:pointer;touch-action:manipulation;user-select:none}
 .primary{background:#174e43;color:#fff;border-color:#174e43}
