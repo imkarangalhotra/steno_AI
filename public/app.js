@@ -3,15 +3,14 @@ import { createDictionary } from './dictionary-ui.js';
 const $ = (id) => document.getElementById(id);
 let recorder, stream, timer, recording, busy = false, pendingMic = false;
 let discard = false;
-let miniWindow = null, openingMini = false, teaching = false, miniForm = null, miniNotice = '', miniCopyNeeded = false;
+let miniWindow = null, openingMini = false, miniCopyNeeded = false;
 function syncMini() {
   if (!miniWindow || miniWindow.closed) return;
   const mini = (id) => miniWindow.document.getElementById(id);
   mini('mini-label').textContent = pendingMic ? 'Starting…' : busy ? 'Processing…' : recorder?.state === 'recording' ? 'Stop recording' : 'Say it loud';
-  mini('mini-record').disabled = $('record').disabled || teaching;
+  mini('mini-record').disabled = $('record').disabled;
   mini('mini-copy').hidden = !miniCopyNeeded;
   mini('mini-copy').disabled = busy || !$('result').value.trim();
-  mini('mini-teach').disabled = busy || pendingMic || recorder?.state === 'recording';
   for (const output of ['english', 'hinglish']) {
     mini('mini-' + output).setAttribute('aria-pressed', String($('output').value === output));
     mini('mini-' + output).disabled = busy || pendingMic;
@@ -19,19 +18,11 @@ function syncMini() {
   mini('mini-record').classList.toggle('recording', recorder?.state === 'recording');
   mini('mini-record').setAttribute('aria-keyshortcuts', $('record').getAttribute('aria-keyshortcuts'));
   mini('mini-record').title = $('status').textContent;
-  mini('mini-status').textContent = miniNotice || (recorder?.state === 'recording' ? $('timer').textContent : busy ? 'Processing…' : $('status').classList.contains('error') ? $('status').textContent : 'Ready');
-  mini('mini-status').title = miniNotice || $('status').textContent;
-  mini('mini-status').classList.toggle('error', $('status').classList.contains('error') && !miniNotice);
+  mini('mini-status').textContent = recorder?.state === 'recording' ? $('timer').textContent : busy ? 'Processing…' : $('status').classList.contains('error') ? $('status').textContent : 'Ready';
+  mini('mini-status').title = $('status').textContent;
+  mini('mini-status').classList.toggle('error', $('status').classList.contains('error'));
 }
 function fitMini(width, height) { try { miniWindow?.resizeTo(width, height); } catch { /* Browser may enforce its own size; teaching content remains scrollable. */ } }
-function closeTeaching() {
-  if (!miniWindow || miniWindow.closed) return;
-  teaching = false;
-  miniWindow.document.getElementById('mini-teaching').hidden = true;
-  miniWindow.document.getElementById('mini-recorder').hidden = false;
-  miniWindow.document.body.classList.remove('teaching');
-  fitMini(340, 190); syncMini(); miniWindow.document.getElementById('mini-teach').focus();
-}
 async function openMini() {
   if (miniWindow && !miniWindow.closed) { miniWindow.focus(); return; }
   if (openingMini) return;
@@ -45,7 +36,7 @@ async function openMini() {
     floating.document.head.append(stylesheet);
     floating.document.body.className = 'mini-body';
     // Only static markup goes into HTML. Model output is assigned as text/value below.
-    floating.document.body.innerHTML = '<section id="mini-recorder"><button id="mini-record" type="button" class="primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg><span id="mini-label">Say it loud</span></button><button id="mini-copy" type="button" class="mini-copy" hidden>Copy text</button><div class="mini-footer"><div class="mini-options" role="group" aria-label="Output language and dictionary"><button id="mini-english" type="button" aria-pressed="true">English</button><button id="mini-hinglish" type="button" aria-pressed="false">Hinglish</button><button id="mini-teach" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5c-3-2-7-2-10-1v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Z"/><path d="M12 5v15"/></svg>Teach a word</button></div><span id="mini-status" role="status" aria-live="polite">Ready</span></div></section><section id="mini-teaching" hidden><div class="mini-heading"><button id="mini-back" type="button" aria-label="Back to recorder">‹</button><h2>Teach a word</h2></div><p class="dictionary-subtitle">Save it to your dictionary.</p><div id="mini-form-mount"></div><p class="dictionary-subtitle">Saved entries sync across devices.</p></section>';
+    floating.document.body.innerHTML = '<section id="mini-recorder"><button id="mini-record" type="button" class="primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg><span id="mini-label">Say it loud</span></button><button id="mini-copy" type="button" class="mini-copy" hidden>Copy text</button><div class="mini-footer"><div class="mini-options" role="group" aria-label="Output language"><button id="mini-english" type="button" aria-pressed="true">English</button><button id="mini-hinglish" type="button" aria-pressed="false">Hinglish</button></div><span id="mini-status" role="status" aria-live="polite">Ready</span></div></section>';
     miniWindow = floating;
     const mini = (id) => floating.document.getElementById(id);
     mini('mini-record').onclick = toggle;
@@ -56,23 +47,10 @@ async function openMini() {
         $('output').value = output; syncMini();
       };
     }
-    miniForm = dictionary.mountForm(mini('mini-form-mount'), (word) => {
-      if (miniWindow !== floating) return;
-      miniNotice = `Saved · ${word}`; closeTeaching();
-    }, () => { if (miniWindow === floating) closeTeaching(); }, true);
-    mini('mini-back').onclick = () => miniForm.cancel();
-    mini('mini-teach').onclick = () => {
-      if (busy || recorder?.state === 'recording') return;
-      teaching = true; miniNotice = '';
-      mini('mini-recorder').hidden = true; mini('mini-teaching').hidden = false;
-      floating.document.body.classList.add('teaching');
-      fitMini(360, 480); miniForm.focus(); dictionary.refresh(); syncMini();
-    };
     floating.document.addEventListener('keydown', handleShortcut);
     floating.addEventListener('pagehide', () => {
       if (miniWindow !== floating) return;
       miniWindow = null;
-      teaching = false; miniForm = null;
       $('open-mini').textContent = '↗ Open mini recorder';
       if (pendingMic && document.hidden) discard = true;
       // Keep the completed audio rather than silently discarding it when the island closes.
@@ -112,7 +90,7 @@ function saveShortcut(value) {
   try { localStorage.setItem('steno-shortcut', JSON.stringify(shortcut)); message('Shortcut saved for this browser.'); }
   catch { message('Shortcut changed for this visit. Browser storage is blocked, so it cannot be remembered.'); }
 }
-const message = (text, error = false) => { miniNotice = ''; $('status').textContent = text; $('status').classList.toggle('error', error); syncMini(); };
+const message = (text, error = false) => { $('status').textContent = text; $('status').classList.toggle('error', error); syncMini(); };
 function controls() {
   const listening = recorder?.state === 'recording';
   if ((busy || listening) && choosingShortcut) { choosingShortcut = false; showShortcut(); }
@@ -139,7 +117,7 @@ async function copy(automatic = false) {
     miniCopyNeeded = false;
     message('Copied — ready to paste anywhere.');
   } catch {
-    miniCopyNeeded = automatic && miniWindow && !miniWindow.closed;
+    miniCopyNeeded = !!(miniWindow && !miniWindow.closed);
     if (miniCopyNeeded) fitMini(320, 190);
     message(automatic ? miniCopyNeeded ? 'Auto-copy was blocked. Tap Copy text in the floating window.' : 'Auto-copy was blocked. Tap Copy text or select the result manually.' : 'Clipboard access is blocked. Select the finished text and copy it manually.');
     if (!automatic) {
@@ -162,6 +140,11 @@ async function process(audio = false) {
     if (audio) $('retry').hidden = true;
     message('Your text is ready.');
     if ($('autocopy').checked) await copy(true);
+    else {
+      miniCopyNeeded = !!(miniWindow && !miniWindow.closed);
+      if (miniCopyNeeded) fitMini(320, 190);
+      message(miniCopyNeeded ? 'Auto-copy is off. Tap Copy text in the floating window.' : 'Your text is ready.');
+    }
   } catch (error) {
     if (audio) $('retry').hidden = false;
     message(error.name === 'TimeoutError' ? 'Processing timed out. Your input is retained; retry.' : error.message, true);
@@ -171,7 +154,6 @@ function stop() {
   if (recorder?.state === 'recording') { busy = true; controls(); recorder.stop(); }
 }
 async function toggle() {
-  if (teaching) return;
   if (recorder?.state === 'recording') return stop();
   if (busy) return;
   if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) return message('Recording requires a supported browser on HTTPS or localhost.', true);
@@ -250,10 +232,6 @@ $('retry').onclick = () => { if (recording) process(true); };
 $('copy').onclick = () => copy();
 function handleShortcut(event) {
   if (event.defaultPrevented || event.repeat || event.isComposing) return;
-  if (teaching) {
-    if (event.code === 'Escape') { event.preventDefault(); miniForm?.cancel(); }
-    return;
-  }
   if (event.target?.closest?.('.dictionary')) return;
   if (choosingShortcut) {
     if (event.code === 'Escape') { event.preventDefault(); choosingShortcut = false; showShortcut(); return message('Shortcut unchanged.'); }
