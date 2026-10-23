@@ -3,12 +3,14 @@ import { createDictionary } from './dictionary-ui.js';
 const $ = (id) => document.getElementById(id);
 let recorder, stream, timer, recording, busy = false, pendingMic = false;
 let discard = false;
-let miniWindow = null, openingMini = false, teaching = false, miniForm = null, miniNotice = '';
+let miniWindow = null, openingMini = false, teaching = false, miniForm = null, miniNotice = '', miniCopyNeeded = false;
 function syncMini() {
   if (!miniWindow || miniWindow.closed) return;
   const mini = (id) => miniWindow.document.getElementById(id);
   mini('mini-label').textContent = pendingMic ? 'Starting…' : busy ? 'Processing…' : recorder?.state === 'recording' ? 'Stop recording' : 'Say it loud';
   mini('mini-record').disabled = $('record').disabled || teaching;
+  mini('mini-copy').hidden = !miniCopyNeeded;
+  mini('mini-copy').disabled = busy || !$('result').value.trim();
   mini('mini-teach').disabled = busy || pendingMic || recorder?.state === 'recording';
   for (const output of ['english', 'hinglish']) {
     mini('mini-' + output).setAttribute('aria-pressed', String($('output').value === output));
@@ -43,10 +45,11 @@ async function openMini() {
     floating.document.head.append(stylesheet);
     floating.document.body.className = 'mini-body';
     // Only static markup goes into HTML. Model output is assigned as text/value below.
-    floating.document.body.innerHTML = '<section id="mini-recorder"><button id="mini-record" type="button" class="primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg><span id="mini-label">Say it loud</span></button><div class="mini-footer"><div class="mini-options" role="group" aria-label="Output language and dictionary"><button id="mini-english" type="button" aria-pressed="true">English</button><button id="mini-hinglish" type="button" aria-pressed="false">Hinglish</button><button id="mini-teach" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5c-3-2-7-2-10-1v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Z"/><path d="M12 5v15"/></svg>Teach a word</button></div><span id="mini-status" role="status" aria-live="polite">Ready</span></div></section><section id="mini-teaching" hidden><div class="mini-heading"><button id="mini-back" type="button" aria-label="Back to recorder">‹</button><h2>Teach a word</h2></div><p class="dictionary-subtitle">Save it to your dictionary.</p><div id="mini-form-mount"></div><p class="dictionary-subtitle">Saved entries sync across devices.</p></section>';
+    floating.document.body.innerHTML = '<section id="mini-recorder"><button id="mini-record" type="button" class="primary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v3M8 22h8"/></svg><span id="mini-label">Say it loud</span></button><button id="mini-copy" type="button" class="mini-copy" hidden>Copy text</button><div class="mini-footer"><div class="mini-options" role="group" aria-label="Output language and dictionary"><button id="mini-english" type="button" aria-pressed="true">English</button><button id="mini-hinglish" type="button" aria-pressed="false">Hinglish</button><button id="mini-teach" type="button"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 5c-3-2-7-2-10-1v15c3-1 7-1 10 1 3-2 7-2 10-1V4c-3-1-7-1-10 1Z"/><path d="M12 5v15"/></svg>Teach a word</button></div><span id="mini-status" role="status" aria-live="polite">Ready</span></div></section><section id="mini-teaching" hidden><div class="mini-heading"><button id="mini-back" type="button" aria-label="Back to recorder">‹</button><h2>Teach a word</h2></div><p class="dictionary-subtitle">Save it to your dictionary.</p><div id="mini-form-mount"></div><p class="dictionary-subtitle">Saved entries sync across devices.</p></section>';
     miniWindow = floating;
     const mini = (id) => floating.document.getElementById(id);
     mini('mini-record').onclick = toggle;
+    mini('mini-copy').onclick = () => copy();
     for (const output of ['english', 'hinglish']) {
       mini('mini-' + output).onclick = () => {
         if (busy || pendingMic) return;
@@ -133,9 +136,12 @@ async function copy(automatic = false) {
   try {
     const text = safeText($('result').value);
     await owner.navigator.clipboard.writeText(text);
+    miniCopyNeeded = false;
     message('Copied — ready to paste anywhere.');
   } catch {
-    message(automatic ? 'Your text is ready. Tap Copy text if automatic copying is blocked.' : 'Clipboard access is blocked. Select the finished text and copy it manually.');
+    miniCopyNeeded = automatic && miniWindow && !miniWindow.closed;
+    if (miniCopyNeeded) fitMini(320, 190);
+    message(automatic ? miniCopyNeeded ? 'Auto-copy was blocked. Tap Copy text in the floating window.' : 'Auto-copy was blocked. Tap Copy text or select the result manually.' : 'Clipboard access is blocked. Select the finished text and copy it manually.');
     if (!automatic) {
       const field = $('result');
       if (owner === miniWindow) window.focus();
